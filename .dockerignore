@@ -1,0 +1,8 @@
+.git
+node_modules
+.editorconfig
+.gitignore
+.tool-versions
+Dockerfile
+README.md
+biome.json
