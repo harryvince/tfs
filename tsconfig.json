@@ -27,6 +27,6 @@
     "noPropertyAccessFromIndexSignature": false,
 
     "baseUrl": ".",
-    "paths": { "@/*": ["./app/*"] }
+    "paths": { "@/*": ["./src/*"] }
   }
 }

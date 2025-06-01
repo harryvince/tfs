@@ -30,24 +30,9 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
   return (
-    <RootDocument>
-      <QueryClientProvider client={queryClient}>
-        <Outlet />
-      </QueryClientProvider>
-    </RootDocument>
-  );
-}
-
-function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
-  return (
-    <html lang="en">
-      <head>
-        <HeadContent />
-      </head>
-      <body>
-        {children}
-        <Scripts />
-      </body>
-    </html>
+    <QueryClientProvider client={queryClient}>
+      <HeadContent />
+      <Outlet />
+    </QueryClientProvider>
   );
 }
