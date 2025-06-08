@@ -48,7 +48,13 @@ export default function AuthForm(props: Props) {
   });
 
   return (
-    <form onSubmit={form.handleSubmit} className="grid grid-cols-1 gap-4 pt-4">
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+      }}
+      className="grid grid-cols-1 gap-4 pt-4"
+    >
       {props.signup && (
         <form.Field
           name="name"
@@ -111,6 +117,7 @@ export default function AuthForm(props: Props) {
       <button
         type="submit"
         className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        onClick={form.handleSubmit}
       >
         Submit
       </button>

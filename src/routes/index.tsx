@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { zodValidator } from "@tanstack/zod-adapter";
+import { useEffect, useMemo } from "react";
 import { toast } from "sonner";
 import { z } from "zod/v4";
 
@@ -31,27 +32,44 @@ function RouteComponent() {
 
   const { data: authData } = auth.useSession();
 
-  const alerts = [
-    {
-      title: "Welcome!",
-      description:
-        "This is a new TFS app. You can find detailed documentation for getting started soon. For now, it's all code lead.",
-    },
-    {
-      title: "Public API Call Example",
-      description: `Initial API Call: ${hello.data?.message}`,
-    },
-    {
-      title: "API Call with input & forced delay",
-      description: `API Call with name: ${helloWithName.isLoading ? "Loading..." : helloWithName.data?.greeting}`,
-    },
-    {
-      title: "Protected API Call Example",
-      description: helloProtected.data?.message
-        ? `Protected API Call: ${helloProtected.data?.message}`
-        : "Protected API Call: Not logged in",
-    },
-  ];
+  useEffect(() => {
+    if (authData?.session) helloProtected.refetch();
+  }, [authData]);
+
+  const alerts = useMemo(
+    () => [
+      {
+        title: "Welcome!",
+        description:
+          "This is a new TFS app. You can find detailed documentation for getting started soon. For now, it's all code lead.",
+      },
+      {
+        title: "Public API Call Example",
+        description: `Initial API Call: ${hello.data?.message}`,
+      },
+      {
+        title: "API Call with input & forced delay",
+        description: `API Call with name: ${helloWithName.isLoading ? "Loading..." : helloWithName.data?.greeting}`,
+      },
+      {
+        title: "Protected API Call Example",
+        description: `Protected API Call: ${
+          helloProtected.isSuccess
+            ? `${helloProtected.data?.message ? helloProtected.data?.message : "Not logged in"}`
+            : helloProtected.isLoading
+              ? "Loading..."
+              : "Not logged in"
+        }`,
+      },
+    ],
+    [
+      helloProtected.data,
+      helloProtected.isSuccess,
+      helloProtected.isLoading,
+      hello.data,
+      helloWithName.data,
+    ],
+  );
 
   return (
     <div className="p-4 grid grid-cols-1 gap-4">
@@ -75,10 +93,11 @@ function RouteComponent() {
                   {},
                   {
                     onSuccess: async () => {
-                      toast.success("Signout successful");
                       await queryClient.invalidateQueries({
                         queryKey: [trpc.generic.helloProtected.queryKey],
                       });
+                      helloProtected.refetch();
+                      toast.success("Signout successful");
                     },
                   },
                 )
