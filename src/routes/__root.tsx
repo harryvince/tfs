@@ -1,12 +1,11 @@
+import { Toaster } from "@/components/ui/sonner";
 import type { RouterContext } from "@/router";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   HeadContent,
   Outlet,
-  Scripts,
   createRootRouteWithContext,
 } from "@tanstack/react-router";
-import type { ReactNode } from "react";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
   head: () => ({
@@ -33,6 +32,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <HeadContent />
       <Outlet />
+      <Toaster />
     </QueryClientProvider>
   );
 }

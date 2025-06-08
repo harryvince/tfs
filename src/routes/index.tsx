@@ -1,161 +1,123 @@
-import { useForm } from "@tanstack/react-form";
+import AuthForm from "@/components/auth-form";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { zodValidator } from "@tanstack/zod-adapter";
+import { toast } from "sonner";
+import { z } from "zod/v4";
+
+const searchSchema = z.object({
+  tab: z.enum(["login", "signup"]).default("login"),
+});
 
 export const Route = createFileRoute("/")({
   component: RouteComponent,
+  validateSearch: zodValidator(searchSchema),
 });
 
 function RouteComponent() {
-  const { trpc, auth } = Route.useRouteContext();
-
-  const session = auth.useSession();
+  const navigate = Route.useNavigate();
+  const { auth, trpc, queryClient } = Route.useRouteContext();
+  const { tab } = Route.useSearch();
 
   const hello = useQuery(trpc.generic.hello.queryOptions());
   const helloWithName = useQuery(
-    trpc.generic.helloWithName.queryOptions({
-      name: "Harry",
-    }),
+    trpc.generic.helloWithName.queryOptions({ name: "Harry" }),
   );
-
   const helloProtected = useQuery(trpc.generic.helloProtected.queryOptions());
 
-  const form = useForm({
-    defaultValues: {
-      name: "",
-      email: "",
-      password: "",
-      signup: false,
+  const { data: authData } = auth.useSession();
+
+  const alerts = [
+    {
+      title: "Welcome!",
+      description:
+        "This is a new TFS app. You can find detailed documentation for getting started soon. For now, it's all code lead.",
     },
-    onSubmit: ({ value }) => {
-      if (!value.signup) {
-        auth.signIn
-          .email({
-            email: value.email,
-            password: value.password,
-          })
-          .then(({ error }) => {
-            if (error) alert(JSON.stringify(error));
-            else {
-              form.reset();
-              helloProtected.refetch();
-            }
-          });
-      } else {
-        auth.signUp
-          .email({
-            email: value.email,
-            password: value.password,
-            name: value.name,
-          })
-          .then(({ data, error }) => {
-            if (error) alert(JSON.stringify(error));
-            else {
-              alert(JSON.stringify(data));
-              form.setFieldValue("signup", false);
-            }
-          });
-      }
+    {
+      title: "Public API Call Example",
+      description: `Initial API Call: ${hello.data?.message}`,
     },
-  });
+    {
+      title: "API Call with input & forced delay",
+      description: `API Call with name: ${helloWithName.isLoading ? "Loading..." : helloWithName.data?.greeting}`,
+    },
+    {
+      title: "Protected API Call Example",
+      description: helloProtected.data?.message
+        ? `Protected API Call: ${helloProtected.data?.message}`
+        : "Protected API Call: Not logged in",
+    },
+  ];
 
   return (
-    <div>
-      <p>Initial API Call: {hello.data?.message}</p>
-      <p>API Call with name: {helloWithName.data?.greeting}</p>
+    <div className="p-4 grid grid-cols-1 gap-4">
+      {alerts.map((alert) => (
+        <Alert key={alert.title} variant="default">
+          <AlertTitle>{alert.title}</AlertTitle>
+          <AlertDescription>{alert.description}</AlertDescription>
+        </Alert>
+      ))}
 
-      <p>Session: {JSON.stringify(session)}</p>
-      {helloProtected.data?.message ? (
-        <p>Protected API Call: {helloProtected.data?.message}</p>
-      ) : (
-        <p>Protected API Call: Not logged in</p>
-      )}
-
-      <form onSubmit={form.handleSubmit}>
-        <form.Field
-          name="name"
-          children={(field) => (
-            <>
-              <input
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                type="text"
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Name"
-              />
-              {!field.state.meta.isValid && (
-                <em>{field.state.meta.errors.join(",")}</em>
-              )}
-            </>
+      <Card>
+        <CardHeader>
+          <CardTitle>Auth</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {authData?.session ? (
+            <Button
+              type="button"
+              onClick={() =>
+                auth.signOut(
+                  {},
+                  {
+                    onSuccess: async () => {
+                      toast.success("Signout successful");
+                      await queryClient.invalidateQueries({
+                        queryKey: [trpc.generic.helloProtected.queryKey],
+                      });
+                    },
+                  },
+                )
+              }
+            >
+              Sign Out
+            </Button>
+          ) : (
+            <Tabs defaultValue={tab} className="w-[400px]">
+              <TabsList>
+                <TabsTrigger
+                  value="login"
+                  onClick={() =>
+                    navigate({
+                      search: (prev) => ({ ...prev, tab: "login" }),
+                    })
+                  }
+                >
+                  Login
+                </TabsTrigger>
+                <TabsTrigger
+                  value="signup"
+                  onClick={() =>
+                    navigate({ search: (prev) => ({ ...prev, tab: "signup" }) })
+                  }
+                >
+                  Signup
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="login">
+                <AuthForm signup={false} />
+              </TabsContent>
+              <TabsContent value="signup">
+                <AuthForm signup={true} />
+              </TabsContent>
+            </Tabs>
           )}
-        />
-        <form.Field
-          name="email"
-          children={(field) => (
-            <>
-              <input
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                type="email"
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Email"
-              />
-              {!field.state.meta.isValid && (
-                <em>{field.state.meta.errors.join(",")}</em>
-              )}
-            </>
-          )}
-        />
-        <form.Field
-          name="password"
-          children={(field) => (
-            <>
-              <input
-                name={field.name}
-                value={field.state.value}
-                onBlur={field.handleBlur}
-                type="password"
-                onChange={(e) => field.handleChange(e.target.value)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Password"
-              />
-              {!field.state.meta.isValid && (
-                <em>{field.state.meta.errors.join(",")}</em>
-              )}
-            </>
-          )}
-        />
-        <form.Field
-          name="signup"
-          children={(field) => (
-            <>
-              <span>Signup</span>
-              <input
-                name={field.name}
-                value={field.state.value.toString()}
-                onBlur={field.handleBlur}
-                type="checkbox"
-                onChange={(e) => field.handleChange(e.target.checked)}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Signup"
-              />
-              {!field.state.meta.isValid && (
-                <em>{field.state.meta.errors.join(",")}</em>
-              )}
-            </>
-          )}
-        />
-        <button
-          type="submit"
-          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        >
-          Submit
-        </button>
-      </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }
