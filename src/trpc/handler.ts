@@ -1,6 +1,7 @@
+import { auth } from "@/auth/server";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
-import { defineEventHandler, toWebRequest } from "vinxi/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
+import { defineEventHandler, toWebRequest } from "vinxi/server";
 import { createTRPCRouter } from "./root";
 import { generic } from "./routers/generic";
 
@@ -21,7 +22,7 @@ export default defineEventHandler((event) => {
     req: request,
     router: appRouter,
     createContext() {
-      return { req: request };
+      return { req: request, user: undefined, auth };
     },
   });
 });
