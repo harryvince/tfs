@@ -1,3 +1,4 @@
+import "@/lib/logger"; // Overwrites console.log so don't need to do anything special to log
 import { auth } from "@/auth/server";
 import type { inferRouterInputs, inferRouterOutputs } from "@trpc/server";
 import { fetchRequestHandler } from "@trpc/server/adapters/fetch";
